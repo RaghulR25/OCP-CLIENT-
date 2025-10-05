@@ -12,3 +12,95 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+* text=auto
+# Ignore environment files
+.env
+*.env.local
+*.env.*
+
+# Ignore dependencies and build
+node_modules/
+build/
+dist/
+
+# Misc
+.DS_Store
+.vscode/
+.idea/
+
+# Git attributes
+* text=auto
+*.js text
+*.jsx text
+*.css text
+*.html text
+
+
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# Production build
+/build
+/dist
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.production
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+
+# Mac files
+
+.DS_Store
+
+# Windows files
+Thumbs.db*.jsx text
+*.css text
+
+*.html text
