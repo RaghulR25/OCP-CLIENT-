@@ -3,6 +3,8 @@ import Card from "../components/Card";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../utils/api";
+import counImg from "../assets/coun.jpg";
+
 
 
 const sampleCounselors = [
@@ -68,11 +70,11 @@ const Home = () => {
       
       <div className="flex flex-col md:flex-row items-center gap-6 mb-10">
        
-        <img
-          src="/src/assets/coun.jpg"
-          alt="Counseling"
-          className="w-full md:w-1/2 h-72 md:h-[600px] object-cover rounded-lg shadow-md"
-        />
+       <img
+  src={counImg}
+  alt="Counseling"
+  className="w-full md:w-1/2 h-72 md:h-[600px] object-cover rounded-lg shadow-md"
+/>
 
         
         <div className="w-full md:w-1/2 h-72 md:h-[600px] overflow-y-auto p-4 bg-white rounded-lg shadow-md">

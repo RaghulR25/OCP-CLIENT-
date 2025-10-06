@@ -19,7 +19,7 @@ const Register = () => {
 
       if (form.role === "admin") navigate("/admin");
       else if (form.role === "counselor") navigate("/create-counselor");
-      else navigate("/dashboard");
+      else navigate("/");
     } catch (error) {
       alert(error.response?.data?.message || "Registration failed");
     }
