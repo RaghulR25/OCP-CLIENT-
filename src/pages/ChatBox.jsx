@@ -4,7 +4,7 @@ import io from "socket.io-client";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
-const socket = io("http://localhost:3000"); 
+const socket = io(import.meta.env.VITE_PORT); 
 
 const ChatBox = () => {
   const { user } = useAuth(); 

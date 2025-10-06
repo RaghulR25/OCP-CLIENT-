@@ -13,7 +13,7 @@ const CounselorLogin = () => {
     setError("");
 
     try {
-      const { data } = await axios.post("http://localhost:3000/api/auth/login", { email, password });
+      const { data } = await axios.post(import.meta.env.VITE_PORT+"/auth/login", { email, password });
       
       localStorage.setItem("token", data.token);
 
