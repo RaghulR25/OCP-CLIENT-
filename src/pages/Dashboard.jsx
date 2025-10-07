@@ -11,24 +11,25 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [paymentMessage, setPaymentMessage] = useState("");
 
-  // Handle payment success query param
+  // ✅ Handle payment success message
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     if (searchParams.get("payment") === "success") {
-      setPaymentMessage("Payment successful! Your session is confirmed.");
+      setPaymentMessage("✅ Payment successful! Your session is confirmed.");
       window.history.replaceState({}, document.title, "/dashboard");
     }
   }, [location.search]);
 
-  // Fetch bookings
+  // ✅ Fetch bookings (with counselor details)
   useEffect(() => {
     if (!user?._id) return;
 
     const fetchBookings = async () => {
       setLoading(true);
       try {
-        const { data } = await api.get(`/bookings/user/${user._id}`);
-        setBookings(data);
+        // This route must populate counselor details in backend
+      const { data } = await api.get(`/bookings/user/${user._id}`);
+setBookings(data);
       } catch (err) {
         console.error("Error fetching bookings:", err);
       } finally {
@@ -39,26 +40,42 @@ const Dashboard = () => {
     fetchBookings();
   }, [user?._id]);
 
-  // Check if user can join session (±10 min window)
+  // ✅ Determine if session is joinable (10-min window)
   const canJoinSession = (bookingDate, bookingTime, paymentDone) => {
     if (!paymentDone) return false;
     const now = new Date();
     const sessionDateTime = new Date(`${bookingDate}T${bookingTime}`);
     const diff = sessionDateTime - now;
-    return Math.abs(diff) <= 10 * 60 * 1000; // ±10 min
+    return Math.abs(diff) <= 10 * 60 * 1000; // ±10 minutes
   };
 
-  // Navigate to video call
+  // ✅ Video Call
   const handleJoin = (booking) => {
+    if (!booking.paymentDone) {
+      alert("Please complete payment to join the video call.");
+      return;
+    }
+
     navigate(`/videocall/${booking._id}`, {
       state: { booking, user, counselor: booking.counselor },
     });
   };
 
-  // Navigate to chat
+  // ✅ Chat
   const handleChat = (booking) => {
-    navigate(`/chat/${booking.counselor?._id}`, {
-      state: { booking, user, counselor: booking.counselor },
+    if (!booking?.counselor || !user) {
+      console.error("Missing required data for chat");
+      return;
+    }
+
+    navigate("/chatbox", {
+      state: {
+        bookingId: booking._id,
+        counselorId: booking.counselor._id,
+        counselorName: booking.counselor.name,
+        userId: user._id,
+        userName: user.name,
+      },
     });
   };
 
@@ -89,7 +106,10 @@ const Dashboard = () => {
                 <h3 className="text-xl font-semibold text-gray-800 mb-1">
                   Counselor: {b.counselor?.name || "Not assigned"}
                 </h3>
-                <p className="text-gray-600 mb-1">Email: {b.counselor?.email || "-"}</p>
+                <p className="text-gray-600 mb-1">
+                  Email: {b.counselor?.email || "-"}
+                </p>
+
                 <p className="text-gray-600 mb-1">
                   <strong>Date:</strong>{" "}
                   {new Date(b.date).toLocaleDateString("en-IN", {
@@ -114,17 +134,17 @@ const Dashboard = () => {
                       b.paymentDone ? "text-green-600" : "text-red-500"
                     }`}
                   >
-                    {b.paymentDone ? "Paid" : "Pending Payment"}
+                    {b.paymentDone ? "Payment Successful" : "Pending Payment"}
                   </span>
                 </p>
 
                 <div className="mt-4 flex flex-col gap-2">
-                  {/* Video Call Button always visible */}
+                  {/* ✅ Video Call Button */}
                   <button
                     onClick={() => handleJoin(b)}
-                    disabled={!isJoinAvailable}
+                    disabled={!b.paymentDone}
                     className={`w-full py-2 rounded-lg text-white ${
-                      isJoinAvailable
+                      b.paymentDone
                         ? "bg-blue-600 hover:bg-blue-700"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
@@ -132,7 +152,7 @@ const Dashboard = () => {
                     📹 Join Video Call
                   </button>
 
-                  {/* Chat Button */}
+                  {/* ✅ Chat Button (only after payment) */}
                   {b.paymentDone && (
                     <button
                       onClick={() => handleChat(b)}
