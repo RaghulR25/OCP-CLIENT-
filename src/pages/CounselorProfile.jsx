@@ -16,7 +16,7 @@ const CounselorProfile = () => {
 
   if (!user) return <p>Please login first to book a session.</p>;
 
-  // ✅ Book session first
+  // Book session
   const handleBookSession = async () => {
     if (!selectedDate || !selectedTime) return alert("Please select date & time");
 
@@ -29,19 +29,19 @@ const CounselorProfile = () => {
           counselor: counselor._id,
           date: selectedDate,
           time: selectedTime,
-          paymentDone: false, // Not paid yet
+          paymentDone: false,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setBooking(data);
-      alert(`✅ Session booked for ${selectedDate} at ${selectedTime}. Please pay the fee to access chat/video/email.`);
+      alert(`✅ Session booked for ${selectedDate} at ${selectedTime}.`);
     } catch (err) {
       console.error(err);
       alert("Booking failed");
     }
   };
 
-  // ✅ Pay after booking
+  // Pay after booking
   const handlePay = async () => {
     if (!booking) return alert("Please book the session first.");
     try {
@@ -52,21 +52,23 @@ const CounselorProfile = () => {
         date: booking.date,
         time: booking.time,
       });
-      window.location.href = data.url; // Stripe checkout
+
+      setPaymentDone(true); // optional, to track payment locally
+      window.location.href = data.url;
     } catch (err) {
       console.error(err);
       alert("Payment initiation failed");
     }
   };
 
-  // ✅ Chat / Video / Email handlers
+  // Chat / Video / Email
   const handleVideoCall = () => {
-    if (!booking || !paymentDone) return alert("Please pay the session fee first.");
+    if (!booking) return alert("Please book the session first.");
     navigate(`/videocall/${booking._id}`, { state: { booking: { ...booking, counselor, user } } });
   };
 
   const handleChat = () => {
-    if (!booking || !paymentDone) return alert("Please pay the session fee first.");
+    if (!booking) return alert("Please book the session first.");
     navigate("/chatbox", {
       state: {
         bookingId: booking._id,
@@ -79,7 +81,7 @@ const CounselorProfile = () => {
   };
 
   const handleEmail = () => {
-    if (!booking || !paymentDone) return alert("Please pay the session fee first.");
+    if (!booking) return alert("Please book the session first.");
     const subject = encodeURIComponent("Counseling Session");
     const body = encodeURIComponent(
       `Hello ${counselor.name},\n\nI would like to discuss my counseling session scheduled on ${booking.date} at ${booking.time}.\n\nThanks,\n${user.name}`
@@ -126,9 +128,10 @@ const CounselorProfile = () => {
         </button>
       </div>
 
-      {booking && paymentDone && (
+      {/* ✅ Show communication buttons immediately after booking */}
+      {booking && (
         <div className="mt-6">
-          <p className="text-green-600 font-semibold mb-3">✅ Session paid and ready!</p>
+          <p className="text-blue-600 font-semibold mb-3">💬 You can access communication now!</p>
           <div className="flex gap-3">
             <button onClick={handleVideoCall} className="bg-purple-600 text-white py-3 px-5 rounded-lg hover:bg-purple-700">📹 Join Video Call</button>
             <button onClick={handleChat} className="bg-green-600 text-white py-3 px-5 rounded-lg hover:bg-green-700">💬 Chat</button>

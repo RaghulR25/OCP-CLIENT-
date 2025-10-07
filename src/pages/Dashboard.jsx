@@ -11,16 +11,16 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [paymentMessage, setPaymentMessage] = useState("");
 
-  // 1️⃣ Handle payment success query param
- useEffect(() => {
-  const searchParams = new URLSearchParams(location.search);
-  if (searchParams.get("payment") === "success") {
-    setPaymentMessage("Payment successful! Your session is confirmed.");
-    window.history.replaceState({}, document.title, "/dashboard");
-  }
-}, [location.search]);
+  // Handle payment success query param
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("payment") === "success") {
+      setPaymentMessage("Payment successful! Your session is confirmed.");
+      window.history.replaceState({}, document.title, "/dashboard");
+    }
+  }, [location.search]);
 
-  // 2️⃣ Fetch bookings whenever user changes or on mount
+  // Fetch bookings
   useEffect(() => {
     if (!user?._id) return;
 
@@ -39,17 +39,25 @@ const Dashboard = () => {
     fetchBookings();
   }, [user?._id]);
 
-  // 3️⃣ Determine if user can join session
+  // Check if user can join session (±10 min window)
   const canJoinSession = (bookingDate, bookingTime, paymentDone) => {
+    if (!paymentDone) return false;
     const now = new Date();
     const sessionDateTime = new Date(`${bookingDate}T${bookingTime}`);
     const diff = sessionDateTime - now;
-    return paymentDone && Math.abs(diff) <= 10 * 60 * 1000; // ±10 min window
+    return Math.abs(diff) <= 10 * 60 * 1000; // ±10 min
   };
 
-  // 4️⃣ Navigate to video call
+  // Navigate to video call
   const handleJoin = (booking) => {
     navigate(`/videocall/${booking._id}`, {
+      state: { booking, user, counselor: booking.counselor },
+    });
+  };
+
+  // Navigate to chat
+  const handleChat = (booking) => {
+    navigate(`/chat/${booking.counselor?._id}`, {
       state: { booking, user, counselor: booking.counselor },
     });
   };
@@ -72,6 +80,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {bookings.map((b) => {
             const isJoinAvailable = canJoinSession(b.date, b.time, b.paymentDone);
+
             return (
               <div
                 key={b._id}
@@ -80,9 +89,7 @@ const Dashboard = () => {
                 <h3 className="text-xl font-semibold text-gray-800 mb-1">
                   Counselor: {b.counselor?.name || "Not assigned"}
                 </h3>
-                <p className="text-gray-600 mb-1">
-                  Email: {b.counselor?.email || "-"}
-                </p>
+                <p className="text-gray-600 mb-1">Email: {b.counselor?.email || "-"}</p>
                 <p className="text-gray-600 mb-1">
                   <strong>Date:</strong>{" "}
                   {new Date(b.date).toLocaleDateString("en-IN", {
@@ -112,6 +119,7 @@ const Dashboard = () => {
                 </p>
 
                 <div className="mt-4 flex flex-col gap-2">
+                  {/* Video Call Button always visible */}
                   <button
                     onClick={() => handleJoin(b)}
                     disabled={!isJoinAvailable}
@@ -121,23 +129,16 @@ const Dashboard = () => {
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    {isJoinAvailable
-                      ? "Join Session"
-                      : !b.paymentDone
-                      ? "Payment Pending"
-                      : "Not Available Yet"}
+                    📹 Join Video Call
                   </button>
 
+                  {/* Chat Button */}
                   {b.paymentDone && (
                     <button
-                      onClick={() =>
-                        navigate(`/chat/${b.counselor?._id}`, {
-                          state: { booking: b, user, counselor: b.counselor },
-                        })
-                      }
+                      onClick={() => handleChat(b)}
                       className="w-full py-2 rounded-lg text-white bg-green-600 hover:bg-green-700"
                     >
-                      Chat with Counselor
+                      💬 Chat with Counselor
                     </button>
                   )}
                 </div>
