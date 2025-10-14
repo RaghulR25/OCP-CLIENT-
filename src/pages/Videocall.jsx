@@ -1,43 +1,30 @@
 import React, { useEffect, useRef } from "react";
-import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { useParams, useLocation } from "react-router-dom";
+import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 
 const Videocall = () => {
-  const { id } = useParams(); // bookingId as roomId
+  const { id: bookingId } = useParams();
   const location = useLocation();
-  const { booking, user, counselor } = location.state || {};
-  const meetingContainer = useRef(null);
-
-  const randomID = (len = 5) => {
-    let result = "";
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    for (let i = 0; i < len; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
+  const { booking, sender, receiver } = location.state || {};
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const initMeeting = async () => {
       const appID = Number(import.meta.env.VITE_ZEGO_APP_ID);
       const serverSecret = import.meta.env.VITE_ZEGO_SERVER_SECRET;
-       console.log("Room ID:", id);
-  console.log("Booking:", booking);
 
       if (!appID || !serverSecret) {
-        console.error("Missing Zego credentials in .env");
+        console.error("Missing Zego credentials");
         return;
       }
 
-      const loggedInPerson = user || counselor;
-      const userID = loggedInPerson?._id || randomID(8);
-      const userName = loggedInPerson?.name || "Guest_" + randomID(5);
+      const userID = sender?._id || "user_" + Math.random().toString(36).slice(2, 8);
+      const userName = sender?.name || "Guest_" + Math.floor(Math.random() * 1000);
 
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appID,
         serverSecret,
-        id,
+        bookingId, // ✅ Use booking._id as roomID
         userID,
         userName
       );
@@ -45,11 +32,11 @@ const Videocall = () => {
       const zp = ZegoUIKitPrebuilt.create(kitToken);
 
       zp.joinRoom({
-        container: meetingContainer.current,
+        container: containerRef.current,
         sharedLinks: [
           {
-            name: "Invite Link",
-            url: `${window.location.origin}/videocall/${id}`,
+            name: "Join Call",
+            url: `${window.location.origin}/videocall/${bookingId}`,
           },
         ],
         scenario: {
@@ -60,7 +47,7 @@ const Videocall = () => {
     };
 
     initMeeting();
-  }, [id, user, counselor]);
+  }, [bookingId, sender]);
 
   return (
     <div className="w-full h-screen bg-black text-white flex flex-col">
@@ -69,7 +56,7 @@ const Videocall = () => {
         👤 Client: {booking?.user?.name} <br />
         🎓 Counselor: {booking?.counselor?.name}
       </div>
-      <div ref={meetingContainer} className="flex-1" />
+      <div ref={containerRef} className="flex-1" />
     </div>
   );
 };

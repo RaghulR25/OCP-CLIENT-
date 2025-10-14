@@ -12,18 +12,18 @@ const CounselorProfile = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [booking, setBooking] = useState(null);
-  const [paymentDone, setPaymentDone] = useState(false);
 
   if (!user) return <p>Please login first to book a session.</p>;
 
   // Book session
   const handleBookSession = async () => {
-    if (!selectedDate || !selectedTime) return alert("Please select date & time");
+    if (!selectedDate || !selectedTime)
+      return alert("Please select date & time");
 
     try {
       const token = localStorage.getItem("token");
       const { data } = await api.post(
-        "/bookings/",
+        "/bookings",
         {
           user: user._id,
           counselor: counselor._id,
@@ -33,6 +33,7 @@ const CounselorProfile = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setBooking(data);
       alert(`✅ Session booked for ${selectedDate} at ${selectedTime}.`);
     } catch (err) {
@@ -49,11 +50,13 @@ const CounselorProfile = () => {
         amount: counselor.expectedFees,
         counselorId: counselor._id,
         userId: user._id,
-        date: booking.date,
-        time: booking.time,
+        bookingId: booking._id,
       });
 
-      setPaymentDone(true); // optional, to track payment locally
+      // update booking payment status locally
+      setBooking({ ...booking, paymentDone: true });
+
+      // redirect to Stripe checkout
       window.location.href = data.url;
     } catch (err) {
       console.error(err);
@@ -61,25 +64,33 @@ const CounselorProfile = () => {
     }
   };
 
-  // Chat / Video / Email
+  // Video Call
   const handleVideoCall = () => {
     if (!booking) return alert("Please book the session first.");
-    navigate(`/videocall/${booking._id}`, { state: { booking: { ...booking, counselor, user } } });
+    if (!booking.paymentDone)
+      return alert("Please complete payment before joining the video call.");
+
+    navigate(`/videocall/${booking._id}`, {
+      state: { booking, user, counselor },
+    });
   };
 
+  // Chat
   const handleChat = () => {
     if (!booking) return alert("Please book the session first.");
+    if (!booking.paymentDone)
+      return alert("Please complete payment before chatting.");
+
     navigate("/chatbox", {
       state: {
         bookingId: booking._id,
         counselorId: counselor._id,
-        counselorName: counselor.name,
         userId: user._id,
-        userName: user.name,
       },
     });
   };
 
+  // Email
   const handleEmail = () => {
     if (!booking) return alert("Please book the session first.");
     const subject = encodeURIComponent("Counseling Session");
@@ -119,23 +130,44 @@ const CounselorProfile = () => {
         >
           Book Session
         </button>
+
         <button
           onClick={handlePay}
-          disabled={!booking}
-          className={`py-3 rounded-lg ${booking ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-400 text-gray-700 cursor-not-allowed"}`}
+          disabled={!booking || booking.paymentDone}
+          className={`py-3 rounded-lg ${
+            booking && !booking.paymentDone
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : "bg-gray-400 text-gray-700 cursor-not-allowed"
+          }`}
         >
-          Pay ₹{counselor?.expectedFees}
+          {booking?.paymentDone ? "Payment Done" : `Pay ₹${counselor?.expectedFees}`}
         </button>
       </div>
 
-      {/* ✅ Show communication buttons immediately after booking */}
       {booking && (
         <div className="mt-6">
-          <p className="text-blue-600 font-semibold mb-3">💬 You can access communication now!</p>
+          <p className="text-blue-600 font-semibold mb-3">
+            💬 You can access communication now!
+          </p>
           <div className="flex gap-3">
-            <button onClick={handleVideoCall} className="bg-purple-600 text-white py-3 px-5 rounded-lg hover:bg-purple-700">📹 Join Video Call</button>
-            <button onClick={handleChat} className="bg-green-600 text-white py-3 px-5 rounded-lg hover:bg-green-700">💬 Chat</button>
-            <button onClick={handleEmail} className="bg-red-600 text-white py-3 px-5 rounded-lg hover:bg-red-700">📧 Email</button>
+            <button
+              onClick={handleVideoCall}
+              className="bg-purple-600 text-white py-3 px-5 rounded-lg hover:bg-purple-700"
+            >
+              📹 Join Video Call
+            </button>
+            <button
+              onClick={handleChat}
+              className="bg-green-600 text-white py-3 px-5 rounded-lg hover:bg-green-700"
+            >
+              💬 Chat
+            </button>
+            <button
+              onClick={handleEmail}
+              className="bg-red-600 text-white py-3 px-5 rounded-lg hover:bg-red-700"
+            >
+              📧 Email
+            </button>
           </div>
         </div>
       )}

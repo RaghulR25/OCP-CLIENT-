@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
-import { Menu, X, Home, User, Calendar, MessageCircle } from "lucide-react";
+import { Menu, X, Home, User, Calendar, MessageCircle, LogOutIcon } from "lucide-react";
 import Footer from "./Footer";
 
 const Navbar = () => {
@@ -110,13 +110,12 @@ const Navbar = () => {
               >
                 <User className="h-5 w-5" /> Profile
               </Link>
-              <Link
-                to="/chatbox"
+              <button
                 className="flex items-center gap-3 hover:text-blue-600 transition"
-                onClick={() => setSidebarOpen(false)}
+                 onClick={logout}
               >
-                <MessageCircle className="h-5 w-5" /> Chat
-              </Link>
+                <LogOutIcon className="h-5 w-5" /> Logout
+              </button>
             </div>
 
             <span className="font-medium bg-blue-500 text-white px-3 py-3 rounded-md shadow my-96">
