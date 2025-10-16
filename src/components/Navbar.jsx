@@ -10,12 +10,10 @@ const Navbar = () => {
 
   return (
     <>
-    
       <nav className="bg-blue-600 text-white px-6 py-3 shadow-md">
         <div className="flex justify-between items-center max-w-7xl mx-auto">
-          
+          {/* Left Side */}
           <div className="flex items-center gap-3">
-           
             {user && user.role !== "counselor" && (
               <button
                 onClick={() => setSidebarOpen(true)}
@@ -24,10 +22,7 @@ const Navbar = () => {
                 <Menu className="h-6 w-6" />
               </button>
             )}
-            <span
-              
-              className="font-bold text-2xl tracking-wide hover:text-gray-200 transition"
-            >
+            <span className="font-bold text-2xl tracking-wide hover:text-gray-200 transition">
               Counseling Platform
             </span>
           </div>
@@ -53,7 +48,8 @@ const Navbar = () => {
 
             {user && (
               <>
-                <span className="font-medium bg-blue-500 px-3 py-1 rounded-md shadow">
+                {/* Hide email on small screens */}
+                <span className="font-medium bg-blue-500 px-3 py-1 rounded-md shadow hidden sm:block">
                   {user.email}
                 </span>
                 <button
@@ -75,8 +71,8 @@ const Navbar = () => {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          {/* Sidebar Header */}
           <div className="flex flex-col justify-between">
+            {/* Sidebar Header */}
             <div className="flex justify-between items-center p-4 border-b">
               <h2 className="text-lg font-bold text-blue-600">Menu</h2>
               <button
@@ -112,21 +108,23 @@ const Navbar = () => {
               </Link>
               <button
                 className="flex items-center gap-3 hover:text-blue-600 transition"
-                 onClick={logout}
+                onClick={logout}
               >
                 <LogOutIcon className="h-5 w-5" /> Logout
               </button>
             </div>
 
-            <span className="font-medium bg-blue-500 text-white px-3 py-3 rounded-md shadow my-96">
+            {/* Hide user email in sidebar on small screens */}
+            <span className="font-medium bg-blue-500 text-white px-3 py-3 rounded-md shadow my-96 hidden sm:block">
               {user.email}
             </span>
+
             <Footer />
           </div>
         </div>
       )}
 
-     
+      {/* Overlay */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}

@@ -11,31 +11,80 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const paymentStatus = query.get("payment");
+    const userId = query.get("user");
+    const counselorId = query.get("counselor");
+    const date = query.get("date");
+    const time = query.get("time");
+
+    const createBookingAfterPayment = async () => {
+      if (paymentStatus === "success" && userId && counselorId) {
+        try {
+          const token = localStorage.getItem("token");
+
+          await api.post(
+            "/bookings",
+            { user: userId, counselor: counselorId, date, time },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          console.log("✅ Booking created successfully after payment!");
+          alert("Payment successful! Your booking has been confirmed.");
+
+         
+          window.history.replaceState({}, document.title, "/dashboard");
+        } catch (err) {
+          console.error("❌ Failed to create booking:", err);
+          alert("Booking creation failed. Please contact support.");
+        }
+      } else if (paymentStatus === "failed") {
+        alert("Payment failed or canceled. Please try again.");
+        window.history.replaceState({}, document.title, "/dashboard");
+      }
+    };
+
+   
     const fetchBookings = async () => {
       if (!user?._id) return;
-
       try {
         const token = localStorage.getItem("token");
         const { data } = await api.get(`/bookings/user/${user._id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setBookings(data); // includes populated counselor
+        setBookings(data);
       } catch (err) {
-        console.error("Failed to fetch bookings:", err);
+        console.error("❌ Failed to fetch bookings:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBookings();
+    // Run both sequentially
+    createBookingAfterPayment().then(fetchBookings);
   }, [user?._id]);
 
   const handleVideoCall = (booking) => {
-    if (!booking.counselor?._id) return alert("Counselor info not available.");
-    navigate(`/videocall/${booking._id}`, {
-      state: { booking, user, counselor: booking.counselor },
-    });
-  };
+  if (!booking?.user?._id || !booking?.counselor?._id) {
+    return alert("Booking or user information missing!");
+  }
+
+  // ✅ Detect whether current user is client or counselor
+  const isCounselor = user?._id === booking.counselor._id;
+
+  // ✅ Define sender/receiver roles based on who is logged in
+  const sender = isCounselor ? booking.counselor : booking.user;
+  const receiver = isCounselor ? booking.user : booking.counselor;
+
+  navigate(`/videocall/${booking._id}`, {
+    state: {
+      booking,     // pass full booking info
+      sender,      // logged-in person
+      receiver,    // opposite side
+    },
+  });
+};
+
 
   const handleChat = (booking) => {
     if (!booking.counselor?._id) return alert("Counselor info not available.");
@@ -43,7 +92,7 @@ const Dashboard = () => {
       state: {
         sender: user,
         receiver: booking.counselor,
-        bookingId: booking._id,
+        booking, 
       },
     });
   };
@@ -76,9 +125,7 @@ const Dashboard = () => {
                 Date: {b.date} ⏰ Time: {b.time}
               </p>
 
-              {/* Communication Buttons */}
               <div className="flex gap-2 mt-3">
-                {/* Video Call */}
                 <button
                   onClick={() => handleVideoCall(b)}
                   className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
@@ -86,23 +133,27 @@ const Dashboard = () => {
                   📹 Video Call
                 </button>
 
-                {/* Chat */}
-                {b.counselor && (
-                  <button
-                    onClick={() =>
-                      navigate("/chatbox", {
-                        state: {
-                          sender: user, // Current logged-in user
-                          receiver: b.counselor, // Populated counselor object
-                          bookingId: b._id, // Booking reference
-                        },
-                      })
+                <button
+                  onClick={() => handleChat(b)}
+                  className="bg-green-600 text-white py-2 px-3.5 rounded hover:bg-green-700"
+                >
+                  💬 Chat
+                </button>
+                <button
+                  onClick={() => {
+                    if (!b.counselor?.email) {
+                      alert("Counselor email not available.");
+                      return;
                     }
-                    className="bg-green-600 text-white py-2 px-3.5 rounded hover:bg-green-700"
-                  >
-                    💬 Chat with {b.counselor.name}
-                  </button>
-                )}
+                    window.open(
+                      `https://mail.google.com/mail/?view=cm&fs=1&to=${b.counselor.email}`,
+                      "_blank"
+                    );
+                  }}
+                  className="bg-blue-600 text-white py-2 px-3.5 rounded hover:bg-blue-700"
+                >
+                  📧 Email
+                </button>
               </div>
             </div>
           ))}

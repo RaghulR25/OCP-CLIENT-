@@ -4,76 +4,76 @@ import io from "socket.io-client";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
-const socket = io(import.meta.env.VITE_PORT || "http://localhost:3000");
+
+const socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:3000");
 
 const ChatBox = () => {
   const { user } = useAuth();
   const location = useLocation();
-  const { receiver, booking } = location.state || {};
+  const { receiver, booking } = location.state || {}; 
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
 
-  // Fetch messages from DB
+ 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!receiver?._id) return;
+      if (!booking?._id) return;
+
       try {
-        const { data } = await api.get(`/chat/${receiver._id}`);
+        const { data } = await api.get(`/chat/booking/${booking._id}`);
         setMessages(data.messages || []);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch messages:", err);
       }
     };
     fetchMessages();
-  }, [receiver]);
+  }, [booking]);
 
   // Socket listener
   useEffect(() => {
-    socket.on("receive_message", (message) => {
-      if (
-        message.senderId === receiver?._id ||
-        message.receiverId === receiver?._id
-      ) {
-        setMessages((prev) => [...prev, message]);
+    socket.on("receive_message", (msg) => {
+      if (msg.booking === booking?._id) {
+        setMessages((prev) => [...prev, msg]);
       }
     });
     return () => socket.off("receive_message");
-  }, [receiver]);
+  }, [booking]);
 
-  // Scroll to bottom
+  // Scroll to bottom whenever messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!input.trim() || !receiver?._id) return;
+    if (!input.trim() || !booking?._id || !receiver?._id) return;
 
-    const messagePayload = {
+    const msgPayload = {
       text: input,
       receiverId: receiver._id,
-      bookingId: booking?._id,
+      bookingId: booking._id,
     };
 
+    // Optimistic UI update
     setMessages((prev) => [
       ...prev,
-      { ...messagePayload, senderId: user._id, senderName: user.name },
+      { ...msgPayload, senderId: user._id, senderName: user.name },
     ]);
     setInput("");
 
     try {
-      const { data } = await api.post("/chat", messagePayload);
-      socket.emit("send_message", data); // Emit to socket server
+      const { data } = await api.post("/chat", msgPayload);
+      socket.emit("send_message", data); // Emit the server message to socket
     } catch (err) {
-      console.error(err);
+      console.error("Failed to send message:", err);
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-100 p-4">
       <h1 className="text-2xl font-bold mb-4 text-center">
-        Chat with {receiver?.name || "Unknown"}
+        Chat with {receiver?.name || "Unknown"} 📅 {booking?.date} ⏰ {booking?.time}
       </h1>
 
       <div className="flex-1 overflow-y-auto mb-4 p-4 border rounded bg-[#ECE5DD]">

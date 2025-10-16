@@ -9,17 +9,74 @@ const CounselorDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [fetching, setFetching] = useState(true);
 
+const handleVideoCall = (booking) => {
+  if (!booking?._id) {
+    return alert("Booking ID missing!");
+  }
+
+  // 🧩 Ensure user and counselor data exist
+  const counselorData = booking?.counselor?._id
+    ? booking.counselor
+    : user?.role === "counselor"
+    ? user
+    : null;
+
+  const userData = booking?.user?._id
+    ? booking.user
+    : user?.role === "user"
+    ? user
+    : null;
+
+  if (!userData || !counselorData) {
+    return alert("User or Counselor information missing!");
+  }
+
+  // 🧠 Identify sender/receiver
+  const isCounselor = user?._id === counselorData._id;
+  const sender = isCounselor ? counselorData : userData;
+  const receiver = isCounselor ? userData : counselorData;
+
+  // 🚀 Navigate to videocall page
+  navigate(`/videocall/${booking._id}`, {
+    state: {
+      booking: { ...booking, counselor: counselorData, user: userData },
+      sender,
+      receiver,
+    },
+  });
+};
+
+const handleEmail = (booking) => {
+  const clientEmail = booking?.user?.email;
+  if (!clientEmail) {
+    return alert("Client email not available!");
+  }
+
+  // Open Gmail compose with recipient pre-filled
+  const gmailURL = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(clientEmail)}`;
+  window.open(gmailURL, "_blank");
+};
+
+
+
   useEffect(() => {
-    if (loading) return; // wait until AuthContext finishes loading
-    if (!user?._id) return;
+    // if (loading) return; // wait until AuthContext finishes loading
+    //if (!user?._id) return;
 
     const fetchBookings = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { data } = await api.get(`/bookings/counselor/${user._id}`, {
+        const counselor = await api.get("/counselors/get/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-         console.log("Bookings API response:", data)
+        console.log("Counselor info:", counselor);
+        const { data } = await api.get(
+          `/bookings/counselor/${counselor.data._id}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("Bookings API response:", data);
         setBookings(data);
       } catch (err) {
         console.error("Error fetching bookings:", err);
@@ -62,34 +119,26 @@ const CounselorDashboard = () => {
                   <td className="p-3 border">{b.time}</td>
                   <td className="p-3 border text-center space-x-2">
                     <button
-                      onClick={() => navigate("/chatbox", {
-                        state: { sender: user, receiver: b.user, booking: b }
-                      })}
+                      onClick={() =>
+                        navigate("/chatbox", {
+                          state: { sender: user, receiver: b.user, booking: b },
+                        })
+                      }
                       className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                     >
                       Chat
                     </button>
                     <button
-                      onClick={() => {
-                        const now = new Date();
-                        const bookingTime = new Date(`${b.date}T${b.time}`);
-                        if (now < bookingTime) {
-                          return alert(
-                            "You can join the video call only at or after the scheduled time."
-                          );
-                        }
-                        navigate(`/videocall/${b._id}`, {
-                          state: { sender: user, receiver: b.user, booking: b }
-                        });
-                      }}
-                      className={`px-3 py-1 rounded text-white ${
-                        new Date() >= new Date(`${b.date}T${b.time}`)
-                          ? "bg-purple-600 hover:bg-purple-700"
-                          : "bg-gray-400 cursor-not-allowed"
-                      }`}
-                      disabled={new Date() < new Date(`${b.date}T${b.time}`)}
+                      onClick={() => handleVideoCall(b)}
+                      className="px-3 py-1 rounded text-white bg-purple-600 hover:bg-purple-700 transition-all duration-200"
                     >
                       Video Call
+                    </button>
+                    <button
+                      onClick={() => handleEmail(b)}
+                      className="px-3 py-1 rounded text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200"
+                    >
+                      Email
                     </button>
                   </td>
                 </tr>
